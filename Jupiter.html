@@ -1,0 +1,546 @@
+<!-- Codigo en HTML/Javascript para calcular y simular la posicion de las Lunas de Jupiter y sus sombras.
+	 Basado en el codigo: 
+	 "Javascript code to calculate the position of Jupiter's moons and shadows." de Akkana Peck.
+	 Bajo los terminos de la GPL v2 o posterior.
+ 	 Ecuaciones tomadas de: Jean Meeus, Astronomical Algorithms 2nd Ed.
+-->
+<html>
+   <head> <!-- Cabecera de la pagina -->
+      <meta content="text/html;charset=utf-8" http-equiv="Content-Type"> <!-- especifica tipo de pagina y codigo de caracteres-->
+      <meta content="utf-8" http-equiv="encoding">
+      <title>Sistema Joviano</title> <!-- El nombre que aparece en la pestaña donde está la pagina -->
+   </head>
+
+   <body background="fondo.gif"> <!-- establece el blque del cuerpo de la pagina y la imagen de fondo -->
+      <font color="#47AEFF" face="fantasy"> <!-- establece el color y tipo de letra en html-->
+      <h1 ALIGN=center>Sistema Joviano</h1> <!-- establece el tamaño de letra, la alineacion y el titulo de la pagina -->
+
+      <p ALIGN=center> <!-- coloca un parrafo con configuracion centrada -->
+	  En la simulación el norte se encuentra la parte superior y el oeste a la derecha<br> <!-- <br> genera un salto de linea -->
+	  (vista binocular/Newtoniana, no refractora)<br>
+	  Las Lunas Galileanas de Jupiter y sus sombras: Ío, Europa, Ganímedes y Calisto.<br>
+      También se puede ver la posición de la Gran Mancha Roja de Jupiter.
+
+      <noscript> <!-- es un texto alternativo que se activa sólo en caso que el navegador no tenga habilitado javascript -->
+         <p>
+         <b> <!-- configura el texto en negritas -->
+         La posición de las lunas estan diseñadas usando Javascript, el cual está deshabilatado en su buscador. 
+		 Requere habilitarlo si quiere ver las posiciones actuales de las lunas de Jupiter.
+         </b>
+      </noscript>
+	  <hr> <!-- coloca una linea horizontal divisoria en la pagina -->
+
+      <div id="recuadroJupiter"> <!-- crea una division(un bloque) en la pagina y le asigna un identificador(aquí aparecerá la simulación) -->
+         <img id="jupiter" src="jupiter.png"> <!-- crea un objeto tipo imagen, le asigna identificador y se da la ubicacion del archivo -->
+         <img id="gmr" src="gmr.png">
+         <img id="sombra0" src="sombraLuna.png">
+         <img id="sombra1" src="sombraLuna.png">
+         <img id="sombra2" src="sombraLuna.png">
+         <img id="sombra3" src="sombraLuna.png">
+         <img id="luna0" src="luna.png">
+         <img id="luna1" src="luna.png">
+         <img id="luna2" src="luna.png">
+         <img id="luna3" src="luna.png">
+         <span id="etiqueta0" class="etiquetaLuna">Ío</span> <!-- crea una etiqueta, su identificador y la clase para configurar estilos CSS -->
+         <span id="etiqueta1" class="etiquetaLuna">Europa</span>
+         <span id="etiqueta2" class="etiquetaLuna">Ganímedes</span>
+         <span id="etiqueta3" class="etiquetaLuna">Calisto</span>
+         <span id="etiquetaSombra0" class="etiquetaSombra">Sombra Ío</span>
+         <span id="etiquetaSombra1" class="etiquetaSombra">Sombra Europa</span>
+         <span id="etiquetaSombra2" class="etiquetaSombra">Sombra Ganímedes</span>
+         <span id="etiquetaSombra3" class="etiquetaSombra">Sombra Calisto</span>
+         <span id="etiquetaEclipse0" class="etiquetaEclipse">Eclipse Ío</span>
+         <span id="etiquetaEclipse1" class="etiquetaEclipse">Eclipse Europa</span>
+         <span id="etiquetaEclipse2" class="etiquetaEclipse">Eclipse Ganímedes</span>
+         <span id="etiquetaEclipse3" class="etiquetaEclipse">Eclipse Calisto</span>
+         <span id="etiquetaGMR">Gran Mancha Roja</span>
+      </div> <!-- termina la division -->
+	  <p ALIGN=center> <!-- coloca un parrafo con configuracion centrada -->
+	  <!-- se crean los botones con identificador, nombre, valor(texto que contendra) y la funcion(es) de javascript a la que llama -->
+      <input id="boton" type="button" name="diaSiguiente" value="-1 día" onClick="agregarHoras(-24);">
+      <input id="boton" type="button" name="horaSiguiente" value="-1 hora" onClick="agregarHoras(-1);">
+      <input id="boton" type="button" name="horaSiguiente" value="-5 minutos" onClick="agregarHoras(-1/12);">
+      <input id="boton" type="button" name="horaSiguiente" value="+5 minutos" onClick="agregarHoras(1/12);">
+      <input id="boton" type="button" name="horaSiguiente" value="+1 hora" onClick="agregarHoras(1);">
+      <input id="boton" type="button" name="diaSiguiente" value="+1 día" onClick="agregarHoras(24);">
+      <input id="boton" type="button" name="ahora" value="> Ahora <" onClick="dibujarJupiter(jupiter, new Date()); predecirProximosEventos(); return true">
+      <p ALIGN=center> <!-- coloca un parrafo con configuracion centrada -->
+      <span id="retardoAnimacion">Retardo: 100 milisegundos</span> <!-- etiqueta -->
+      <input id="boton" type="button" name="animar" value="Animar" onClick="activarAnimacion();">
+      <input id="boton" type="button" name="masRapido" value="Más Rápido" onClick="cambiarVelocidadAnimacion(20);">
+      <input id="boton" type="button" name="masLento" value="Más Lento" onClick="cambiarVelocidadAnimacion(-20);">
+      <p ALIGN=center> <!-- coloca un parrafo con configuracion centrada -->
+      Especificar una fecha alternativa:
+      <!-- campo de texto para la fecha(en caso de cambios llama a la funcion "configurarFecha()" del codigo del programa) -->
+      <input id="campoFecha" type="datetime" onChange="configurarFecha(); return false;" size=60> 
+      <input id="boton" type="button" name="recalcular" value="Recalcular" onClick="configurarFecha();">
+      <span id="recalculando"><i>Recalculando ...</i></span> <!-- etiqueta -->
+      <p ALIGN=center> <!-- coloca un parrafo con configuracion centrada -->
+      Mostrar eventos para
+      <!-- area de texto donde aparece la descripcion de los eventos -->
+      <input id="proximas-horas" type="text" value="8" size=4 onChange="predecirProximosEventos();"> 
+      horas.
+      <input id="boton" type="button" name="predecir" value="Predecir" onClick="predecirProximosEventos();">
+      <p>
+      <pre id="eventos"></pre> <!-- establece que el texto se mantenga tal y como esta escrito en el código -->
+      
+
+	  <style type="text/css"> /* se establecen los estilos, colores y fuentes de divisiones, etiquetas, botones, areas de texto, etc. */
+         div#recuadroJupiter { color: black; position: relative; width: 99%; height: 200px; } /* color, posicion, dimenciones de la division */
+         #recuadroJupiter img, #recuadroJupiter span { position: absolute; visibility: hidden; z-index: 50; } /* configuracion de otros objetos en la division */
+         #recuadroJupiter span.etiquetaLuna { color: #F3F781; top: .3em; font-size: .8em; } /* configura color, posicion y tamaño de una clase etiqueta */
+         #recuadroJupiter span.etiquetaSombra { color: #C9AECD; top: 3em; font-size: .8em; } 
+         #recuadroJupiter span.etiquetaEclipse { color: #A901DB; top: 1.5em; font-size: .8em; }
+         #recuadroJupiter span#etiquetaGMR { color: orange; bottom: 2em; font-size: .8em; } /* configura color, posicion y tamaño del objeto etiquetaGMR */
+         /* configura fuente, tamaño de letra, bordes, color, color de fuente, color al apuntar y estilo de fuente al apuntar de los botones */
+         input[type=button]#boton { font-family: fantasy; font-size: .8em; border: none; background-color: #743090; color: #71BCE7;} 
+		 #boton:hover{ background-color: #06F; font-style: oblique; }
+         #eventos { background: black; border: 1px inset; padding: 5px;  } /* configura color, posicion de el area de texto "eventos" */
+      </style>
+	  
+      <script type="text/javascript"> // aquí comienza el codigo del programa
+         var fecha = null;
+		 var url = new String(document.location); // Especificó el usuario una fecha en la URL?
+		 var idx = url.indexOf("?");
+		 if (idx > 0) {
+		    idx = url.indexOf("fecha=", idx);
+			if (idx > 0) fecha = new Date(decodeURIComponent(url.substr(idx + 5)));
+		 }
+		 
+		 if (!fecha) fecha = new Date();
+		 // Algunas fechas útiles para pruebas(recomendadas por el autor del código original):
+		 //fecha = new Date('Sat Nov 10 2012 16:10:00 GMT-0800 (PDT)'); // Ganímedes sufre un eclipse, reaparece y despues es ocultado por Jupiter
+		 //fecha = new Date('Mon Mar 10 2013 19:53:00 GMT-0700 (PDT)'); // Europa debe ser visible a las 19:51 desaparecer a las 19:59; y regresar a las 20:06 re xephem
+		 //fecha = new Date('Mon Mar 10 2013 19:57:00 GMT-0700 (PDT)');
+		 //fecha = new Date('Mon Mar 10 2013 20:02:00 GMT-0700 (PDT)');
+		 //fecha = new Date('Wed Mar 10 2010 06:35:17 GMT-0800 (PST)'); // 2 transitos, 2 sombras
+		 
+		 // Llama al codigo que calcula las posiciones.
+		 var jupiter = new Jupiter(); // Se crea un objeto de tipo Jupiter(la funcion que hace los calculos principales)
+		 actualizarFecha(fecha);
+         function Jupiter() {
+            const NUMERO_LUNAS = 4;
+
+            var fechaActual; // Objeto de javascript para la fecha.
+            var d; // Días desde la epoca: 1899 Dec 31 12h ET
+			var psi; // Angulo de la fase de Jupiter
+			var lambda1; // Latitud del sistema I.
+			var lambda2; // Latitud del sistema II.
+			var De; // Declinación planetocéntrica: la distancia angular de la Tierra al Ecuador de Jupiter.
+			var anguloLuna = [NaN, NaN, NaN, NaN]; // Angulos en radianes expresados en relacion con la conjunción inferior de cada satelite.
+			var distanciaLuna = [NaN, NaN, NaN, NaN]; // Distancias respecto al planeta.
+			
+			function obtenerFecha() {
+			   return fechaActual;
+			}
+			this.obtenerFecha = obtenerFecha;
+			
+			function oangulo(ang) {
+			   while (ang > 2 * Math.PI) ang -= 2. * Math.PI;
+			   while (ang < 0) ang += 2. * Math.PI;
+			   return ang;
+			}
+			
+			function angulo(ang) { // Convierte un angulo a radianes.
+			   if (ang < 10000) return oangulo(ang);
+			   ang = ang - 2.*Math.PI * parseInt(ang / 2. / Math.PI);
+			   if (ang < 0) ang += 2*Math.PI;
+			   return ang;
+			}
+			
+			function obtenerDiasEntre(d1, d2) {
+			   return ((d2.getTime() - d1.getTime())) / (24.*60.*60.*1000.);
+			}
+			
+			function obtenerFechaJuliana(d) {
+			   return (obtenerDiasEntre(new Date("Jan 1 0:00 PST 1970"), d) + 2440587.83333333333);
+			}
+			
+			// Calcula:
+			// *la posición del meridiano central de Jupiter.
+			// *las longitudes del sistema I y el sistem II.
+			// *psi, el angulo de la fase de Jupiter (siempre entre -12 y 12 grados).
+			// *De, la declinación planetocéntrica de la Tierra: la distancia angular de la Tierra al Ecuador de Jupiter.
+			// *los arreglos correspondientes a anguloLuna y distanciaLuna.
+			function configurarFecha(fechaInicial) { 
+			   fechaActual = fechaInicial;
+			   var d = obtenerFechaJuliana(fechaInicial) - 2451545; // Primero se obtiene el número de días desde: 2000 Jan 1 12h ET.
+			   var V = angulo((172.74 + .00111588 * d) * Math.PI / 180); // Argument for the long-period term in the motion of Jupiter.
+			   var M = angulo((357.529 + .9856003 * d) * Math.PI / 180); // Anomalías promedio de la Tierra.
+			   var N = angulo((20.020 + .0830853 * d + .329 * Math.sin(V)) * Math.PI / 180); // Anomalías promedio de Jupiter.
+			   
+			   // Diferencia entre las longitudes heliocentricas promedio de la Tierra y Jupiter:
+			   var J = angulo((66.115 + .9025179 * d - .329 * Math.sin(V)) * Math.PI / 180);
+			   
+			   var A = angulo((1.915 * Math.sin(M) + .020 * Math.sin(2*M)) * Math.PI / 180); // Ecuación del centro de la Tierra.
+			   var B = angulo((5.555 * Math.sin(N) + .168 * Math.sin(2*N)) * Math.PI / 180); // Ecuación del centro de Jupiter.
+			   
+			   var K = angulo(J + A - B);
+			   
+			   var R = 1.00014 - .01671 * Math.cos(M) - .00014 * Math.cos(2*M); // Radio vector de la Tierra en UA.
+			   var r = 5.20872 - .25208 * Math.cos(N) - .00611 * Math.cos(2*N); // Raadio vector de Jupiter en UA.
+			   
+			   var delta = Math.sqrt(r*r + R*R - 2*r*R*Math.cos(K)); // Distancia entre la Tierra y Jupiter.
+			   
+			   psi = Math.asin(R / delta * Math.sin(K)); // Angulo de la fase de Jupiter (Siempre entre -12 y 12 grados)
+			   
+			   lambda1 = angulo((210.98 * 877.8169088 * (d - delta / 173)) * Math.PI / 180 + psi - B); // Longitud del sistema 1
+			   lambda2 = angulo((187.23 + 870.1869088 * (d - delta / 173)) * Math.PI / 180 + psi - B); // Longitud del sistema 2
+			   
+			   // Declinación planetocéntrica Tierra-Jupiter:
+			   var lambda = angulo((34.35 + .083091 * d + .329 * Math.sin(V)) * Math.PI / 180 + B); 
+			   De = ((3.12 * Math.sin(lambda + 42.8 * Math.PI / 180) - 2.22 * Math.sin(psi) * Math.cos(lambda + 22.*Math.PI/180)
+			         - 1.30 * (r - delta) / delta * Math.sin(lambda - 100.5 * Math.PI / 180)) * Math.PI / 180);
+			   
+			   // Calculan los angulos de cada satelite:
+			   anguloLuna[0] = angulo((163.8069 + 203.4058646 * (d - delta / 173)) * Math.PI / 180 + psi - B);
+			   anguloLuna[1] = angulo((358.4140 + 101.2916335 * (d - delta / 173)) * Math.PI / 180 + psi - B);
+			   anguloLuna[2] = angulo((5.7176 + 50.2345180 * (d - delta / 173)) * Math.PI / 180 + psi - B);
+			   anguloLuna[3] = oangulo((224.8092 + 21.4879800 * (d - delta / 173)) * Math.PI / 180 + psi - B);
+			   
+			   // Calcula las distancias antes de aplicar alguna corrección:
+			   distanciaLuna[0] = 5.9057 - .0244 * Math.cos(2 * (anguloLuna[0] - anguloLuna[1]));
+			   distanciaLuna[1] = 9.3966 - .0882 * Math.cos(2 * (anguloLuna[1] - anguloLuna[2]));
+			   distanciaLuna[2] = 14.9883 - .0216 * Math.cos(angulo((331.18 + 50.310482 * (d - delta / 173)) * Math.PI / 180));
+			   distanciaLuna[3] = 26.3627 - .1939 * Math.cos(angulo((87.45 + 21.569231 * (d - delta / 173)) * Math.PI / 180));
+			   
+			   // Aplica algunos términos de corrección de primer orden para los ángulos:
+			   anguloLuna[0] = angulo(anguloLuna[0] + Math.sin(2 * (anguloLuna[0] - anguloLuna[1])) * .473 * Math.PI / 180);
+			   anguloLuna[1] = angulo(anguloLuna[1] + Math.sin(2 * (anguloLuna[1] - anguloLuna[2])) * 1.065 * Math.PI / 180);
+			   anguloLuna[2] = angulo(anguloLuna[2] + Math.sin(angulo((331.18 + 50.310482 * (d - delta / 173)) * Math.PI / 180)) * .165 * Math.PI / 180);
+			   anguloLuna[3] = angulo(anguloLuna[3] + Math.sin(angulo((87.45 + 21.569231 * (d - delta / 173)) * Math.PI / 180)) * .843 * Math.PI / 180);
+			}
+			this.configurarFecha = configurarFecha; //Hace publica la función.
+			
+			function coordenadasXY(x, y) { // Objeto que contiene: .x, .y
+			   this.x = x || NaN;
+			   this.y = y || NaN;
+			}
+			
+			function distancia(x, y) {
+		       return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+		    }
+		 
+			// Regresa la posición de una luna en unidad de radios de Jupiter, calcula las sombras, 
+			// y verifica si la luna está eclipsada por la sombra de Jupiter o transitando frente a Jupiter.
+			function obtenerDatosLunaXY(cualLuna) {
+			   var r = distanciaLuna[cualLuna];
+			   var datosLuna = new Object(); 
+			   
+			   function obtenerSombraXY(angulo) {
+			      var anguloLunaSol = angulo - psi;
+				  var xy = new coordenadasXY();
+				  xy.x = r * Math.sin(anguloLunaSol);
+				  xy.y = r * Math.cos(anguloLunaSol) * Math.sin(De);
+				  return xy;
+			   }
+			   
+			   datosLuna.coordenadaX = r * Math.sin(anguloLuna[cualLuna]);
+			   datosLuna.coordenadaY = r * Math.cos(anguloLuna[cualLuna]) * Math.sin(De);
+			   
+			   // Está la Luna directamente en frente o detras del disco de Jupiter? Entonces ésta distancia será <= 1.
+			   distanciaAlDisco = distancia(datosLuna.coordenadaX, datosLuna.coordenadaY);
+			   
+			   // Verifica si la luna está en el lado cercano de Jupiter:
+			   if (anguloLuna[cualLuna] < Math.PI * .5 || anguloLuna[cualLuna] > Math.PI * 1.5) {
+			      // Está transitando? Deja un pequeño espacio y considera un transito lunar sólo cuando está comenzando el transito.
+				  if (distanciaAlDisco < .9) datosLuna.transito = true;
+				  
+				  // Dado que la luna está en el lado cercano, revisa si hay sombra de la luna sobre Jupiter.
+				  datosLuna.ladoLejano = false;
+				  
+				  xy = obtenerSombraXY(anguloLuna[cualLuna]);
+				  datosLuna.sombraX = xy.x;
+				  datosLuna.sombraY = xy.y;
+				  
+				  // La sombra está sobre Jupiter? Si no, establece cordenadas a NaN.
+				  if (datosLuna.sombraX < -1. || datosLuna.sombraX > 1.) datosLuna.sombraX = datosLuna.sombraY = NaN;
+			   } else if (distanciaAlDisco < 1.0) { // La luna es blockeada por Jupiter, es visible? sino (datosLuna.coordenadaX < 1. && datosLuna.coordenadaX > -1.)
+			      datosLuna.ladoLejano = true;
+				  datosLuna.coordenadaX = datosLuna.coordenadaY = NaN;
+			   } else { // sino, está en el lado lejano. Revisa si está eclipsada por la sobra de Jupiter.
+			      datosLuna.ladoLejano = true;
+				  
+				  // Revisa si una luna 180 grados alejado de esta posicion lunar, en la misma distancia, pondría una sombra en Jupiter.
+				  // Si es así, la luna actual está eclipsada.
+				  atmoslop = .9; //atmoslop = 1.0;   // podría ser mejor usar .83
+				  xy = obtenerSombraXY(angulo(anguloLuna[cualLuna] + Math.PI));
+				  datosLuna.eclipse = (distancia(xy.x, xy.y) < atmoslop);
+			   }
+			   return datosLuna;
+			}
+			this.obtenerDatosLunaXY = obtenerDatosLunaXY
+			
+			// La Gran Mancha Roja, actualmente en la longitud 61 en el sistema II:
+			function obtenerManchaRojaXY(manchaEnGrados) { 
+			   var manchaLongitud = angulo(lambda2 - manchaEnGrados*Math.PI/180);
+			   
+			   var coordenadas = new coordenadasXY();
+			   
+			   // Revisa si la mancha es visible:
+			   if (manchaLongitud > Math.PI * .5 && manchaLongitud < Math.PI * 1.5) coordenadas.x = coordenadas.y = NaN;
+			   else {
+			      coordenadas.x = Math.sin(manchaLongitud);
+				  coordenadas.y = .42;	// dato arbitrario
+			   }
+			   return coordenadas;
+			}
+			this.obtenerManchaRojaXY = obtenerManchaRojaXY;
+		 }
+		 
+		 // Construye una tabla de proximos eventos lunares para un intervalo dado.
+		 function proximosEventos(fecha, totalHoras) {
+		    
+			function textoLapsoTiempo(totalHoras) { 
+		       if (totalHoras < 24) texto = totalHoras + " horas";
+			   else {
+			      horas = totalHoras % 24;
+				  dias = (totalHoras-horas) / 24;
+				  texto = dias + " días";
+				  if (dias != 1) texto += "s";
+				  
+				  if (horas == 1) texto += ", 1 hora";
+				  else if (horas > 0) texto += ", " + horas + " horas";
+			   }
+			   return texto;
+		    }
+			
+			function terminaCon(texto, sufijo) {
+		       return texto.indexOf(sufijo, texto.length - sufijo.length) !== -1;
+			}
+			
+		    function pluralizar(numero, palabra) { // Escribe las palabras en plural(para el area de texto de los eventos)
+		       if (numero == 1) return "1 " + palabra;
+ 		       else if (terminaCon(palabra, 's')) return numero + " " + palabra + "es";
+			   return numero + " " + palabra + "s";
+			}
+			
+		    var fechaGuardada = jupiter.fechaActual;
+			if (!fechaGuardada) fechaGuardada = fecha;
+			intervalo = 1;   // minutos
+			
+			eventos = "<b>Eventos lunares en las proximas " + textoLapsoTiempo(totalHoras) + "</b>\n\n";
+			nombreLuna = [ "Ío", "Europa", "Ganimedes", "Calisto" ];
+			
+			d = new Date(fecha);
+			
+			ultimosDatosLuna  = [ null, null, null, null ]; // ultimosDatosLuna incluye: coordenadaX, coordenadaY, sombraX, sombraY, ladoLejano y eclipsado.
+			var verbose = false;
+			
+		    for (mins = -30; mins < totalHoras * 60; mins += intervalo) {
+			   d.setTime(fecha.getTime() + mins * 60 * 1000);
+			   jupiter.configurarFecha(d);
+			   if (verbose) eventos += "\n" + d + "\n";
+			   
+			   // Lleva el seguimentos de cuántas lunas están involucradas en eventos.
+			   numeroDeSombras = 0;
+			   numeroDeTransitos = 0;
+			   esteEvento = "";
+			   for (var cualLuna = 0; cualLuna < 4; ++cualLuna) {
+			      datosLuna = jupiter.obtenerDatosLunaXY(cualLuna);
+				  if (verbose) {
+				     eventos += " (" + cualLuna + "):\n";
+					 eventos += JSON.stringify(datosLuna) + "\n";
+				  }
+				  
+			      if (ultimosDatosLuna[cualLuna]) { // Cuenta total de los eventos
+				     if (datosLuna.sombraX) ++numeroDeSombras;
+					 if (datosLuna.transito) ++numeroDeTransitos;
+					 
+					 if (! datosLuna.coordenadaX && ultimosDatosLuna[cualLuna].coordenadaX)
+					    esteEvento += d + ": " + nombreLuna[cualLuna] + " desaparece\n";
+					 else if (datosLuna.coordenadaX && ! ultimosDatosLuna[cualLuna].coordenadaX) {
+					    if (! datosLuna.eclipse) esteEvento += d + ": " + nombreLuna[cualLuna] + " reaparece\n";
+					 } else if (datosLuna.transito && ! ultimosDatosLuna[cualLuna].transito)
+					    esteEvento += d + ": " + nombreLuna[cualLuna] + " comienza transito\n";
+				     else if (! datosLuna.transito && ultimosDatosLuna[cualLuna].transito)
+					    esteEvento += d + ": " + nombreLuna[cualLuna] + " termina transito\n";
+				     else if (datosLuna.eclipse && ! ultimosDatosLuna[cualLuna].eclipse)
+				        esteEvento += d + ": Comienza eclipse de " + nombreLuna[cualLuna] + "\n";
+				     else if (! datosLuna.eclipse && ultimosDatosLuna[cualLuna].eclipse)
+				        esteEvento += d + ": Termina eclipse de " + nombreLuna[cualLuna] + "\n";
+						
+				     if (!datosLuna.sombraX && ultimosDatosLuna[cualLuna].sombraX)
+				        esteEvento += d + ": Desaparece sombra de " + nombreLuna[cualLuna] + "\n";
+				     else if (datosLuna.sombraX && !ultimosDatosLuna[cualLuna].sombraX)
+				        esteEvento += d + ": Aparece sombra de " + nombreLuna[cualLuna] + "\n";
+			         //if (verbose) eventos += JSON.stringify(ultimosDatosLuna[cualLuna]) + "\n"
+			      }
+			      ultimosDatosLuna[cualLuna] = JSON.parse(JSON.stringify(datosLuna)); // Clona un objeto de javascript.
+			   } // termina ciclo de cualLuna
+			   
+			   if (esteEvento && (numeroDeSombras + numeroDeTransitos > 1))
+			      eventos += "<b>" + pluralizar(numeroDeTransitos, "transito") + ", " + pluralizar(numeroDeSombras, "sombra") + ":</b>\n";
+			   eventos += esteEvento;
+			}
+			   
+			if (fechaGuardada != undefined) jupiter.configurarFecha(fechaGuardada);
+		    return eventos;
+		 }
+			
+		 function predecirProximosEventos() {
+			ocupado.style.visibility = "visible";
+			var eventos = document.getElementById("eventos");
+			if (!eventos) return;
+			eventos.innerHTML = proximosEventos(jupiter.obtenerFecha(), parseInt(document.getElementById("proximas-horas").value));
+		    ocupado.style.visibility = "hidden";
+         }
+			
+		 function anchoPantalla() { // Verifica el ancho de pantalla
+			if (window.innerWidth != null) return window.innerWidth;
+			if (document.documentElement.clientWidth) return document.documentElement.clientWidth; 
+			return 800;
+		 }
+			
+		 function colocarImagen(imagen, ladoIzquierdo, ladoSuperior, ancho, alto) { //Establece el tamaño y posicion del cada imagen
+		    imagen.style.left = ladoIzquierdo;
+			if (ladoSuperior) imagen.style.top = ladoSuperior;
+			   
+			if (ancho) {
+			   imagen.width = ancho;
+			   if (alto) imagen.height = alto;
+			   else imagen.height = ancho;   // asume que es cuadrada si especifica el ancho pero no el alto.
+			}
+			imagen.style.visibility = "visible";
+		 }
+			
+		 // Actualiza Jupiter y predice futuros eventos basado en lo que esté en el campo de texto de fecha de la página.
+		 function configurarFecha() {
+            dibujarJupiter(jupiter, new Date(document.getElementById("campoFecha").value));
+			predecirProximosEventos();
+		 }
+		 
+		 // Actualiza el campo de fecha con una fecha dada y después llama a configurarFecha().
+		 function actualizarFecha(nuevaFecha) {
+		    var campoFecha = document.getElementById("campoFecha");
+			if (! campoFecha) return;
+			campoFecha.value = nuevaFecha;
+			configurarFecha();
+		 }
+			
+		 function agregarHoras(horas) {
+		    var d = jupiter.obtenerFecha();
+			d.setTime(d.getTime() + 60 * 60 * horas * 1000);
+			actualizarFecha(d);
+		 }
+			
+		 // Animación:
+	     var animacion = false;
+		 var tiempoAnimacion = 100;  // el tiempo configurado por defecto de retardo en milisegundos entre saltos en la animación
+		 var periodoMinutos = 10;   // el tiempo configurado por defecto para el avance en cada salto
+			
+		 function saltoDeAnimacion() {
+		    if (! animacion) return;
+			var d = jupiter.obtenerFecha();
+			d.setTime(d.getTime() + periodoMinutos * 60 * 1000);
+			dibujarJupiter(jupiter, d);
+			setTimeout("saltoDeAnimacion();", tiempoAnimacion);
+		 }
+			
+		 function cambiarVelocidadAnimacion(amt) {
+		    if (periodoMinutos > 10 && amt < 0) periodoMinutos -= 10; 
+			else if (tiempoAnimacion == 1) {
+			   tiempoAnimacion = 1;
+			   periodoMinutos += 10;
+			} else {
+			   tiempoAnimacion -= amt;
+			   if (tiempoAnimacion < 1) tiempoAnimacion = 1;
+			}
+			var lapsoAnimacion = document.getElementById("retardoAnimacion");
+			lapsoAnimacion.innerHTML = "Retraso: " + tiempoAnimacion + " milisegundos";
+		 }
+			
+		 function activarAnimacion() {
+		    animacion = !animacion;
+			if (animacion) saltoDeAnimacion();
+			else predecirProximosEventos();
+		 }
+			
+		 function dibujarJupiter(jupiter, fecha) {
+			ocupado = document.getElementById("recalculando")
+			ocupado.style.visibility = "visible";
+			   
+			jupiter.configurarFecha(fecha);
+			   
+			var ancho = parseInt(anchoPantalla() * .99);
+			var mitadAncho = ancho/2;
+			var alto = 200;
+			var mitadAlto = alto/2;
+			var radioJupiter = 25; // Se cambia el tamaño jupiter y de todo el sistema en proporcion a este dato
+			var anchoMancha = 27 * radioJupiter / 30;
+			var altoMancha = 13 * radioJupiter / 30;
+			   
+			// Se asegura que Jupiter este centrado:
+			var imagen = document.getElementById("jupiter");
+			if (imagen) colocarImagen(imagen, mitadAncho - radioJupiter, mitadAlto - radioJupiter, radioJupiter*2);
+			   
+			// La Gran Mancha Roja:
+			var coordenadas = jupiter.obtenerManchaRojaXY(80);
+			var imagen = document.getElementById("gmr");
+			var etiqueta = document.getElementById("etiquetaGMR");
+			   
+			if (imagen && !isNaN(coordenadas.x) && !isNaN(coordenadas.y)) {
+			   var sx = mitadAncho + coordenadas.x * radioJupiter - anchoMancha/2;
+			   var sw = anchoMancha;
+			   var jr = radioJupiter * .8;   // radio aproximado en la latitud de la mancha
+			   if (sx < mitadAncho - jr) { 
+				  sw = sw - mitadAncho - jr - sx;
+				  sx = mitadAncho - jr 
+			   } else if (sx + sw > mitadAncho + jr) sw = mitadAncho + jr - sx;
+			   colocarImagen(imagen, sx, coordenadas.y * radioJupiter + mitadAlto - altoMancha/2, sw, altoMancha);
+			   if (etiqueta) colocarImagen(etiqueta, sx);
+			} else if (imagen) {
+			   imagen.style.visibility = "hidden";
+			   if (etiqueta) etiqueta.style.visibility = "hidden";
+			} else alert("no gmr image");
+			   
+			for (var cualLuna = 0; cualLuna < 4; ++cualLuna) {
+			   datosLuna = jupiter.obtenerDatosLunaXY(cualLuna); // Primero toma la sombra
+				  
+			   imagen = document.getElementById("sombra" + cualLuna);
+			   etiqueta = document.getElementById("etiquetaSombra" + cualLuna);
+			   if (imagen && !isNaN(datosLuna.sombraX) && !isNaN(datosLuna.sombraY)) {
+				  imagen.setAttribute("src", "sombraLuna.png");
+				  var x = datosLuna.sombraX * radioJupiter + mitadAncho;
+				  colocarImagen(imagen, x, datosLuna.sombraY * radioJupiter + mitadAlto);
+					 
+				  // Coloca la etiqueta de la sombra:
+				  if (etiqueta) colocarImagen(etiqueta, x);
+			   } else if (imagen) {
+				  imagen.style.visibility = "hidden";
+				  if (etiqueta) etiqueta.style.visibility = "hidden";
+			   }
+				  
+				  // Con la sombra de la luna ya puesta, se coloca la luna:
+				  imagen = document.getElementById("luna" + cualLuna);
+				  etiqueta = document.getElementById("etiqueta" + cualLuna);
+				  etiquetaEclipse = document.getElementById("etiquetaEclipse" + cualLuna);
+			   if (datosLuna.eclipse) {
+				  var x = datosLuna.coordenadaX * radioJupiter + mitadAncho;
+				  colocarImagen(etiquetaEclipse, x);
+				  if (imagen) imagen.style.visibility = "hidden";
+				  if (etiqueta) etiqueta.style.visibility = "hidden";
+			   } else if (imagen && !isNaN(datosLuna.coordenadaX) && !isNaN(datosLuna.coordenadaY)) {
+				  imagen.setAttribute("src", "luna.png");
+				  var x = datosLuna.coordenadaX * radioJupiter + mitadAncho;
+				  colocarImagen(imagen, x, datosLuna.coordenadaY * radioJupiter + mitadAlto);
+				  if (datosLuna.ladoLejano) imagen.style.zIndex = 1;
+				  else imagen.style.zIndex = 100;
+				  
+				  // Coloca la etiqueta de la luna:
+				  if (etiqueta) colocarImagen(etiqueta, x);
+				  
+				  if (etiquetaEclipse) etiquetaEclipse.style.visibility = "hidden";
+			   } else {
+				  if (imagen) imagen.style.visibility = "hidden";
+				  if (etiqueta) etiqueta.style.visibility = "hidden";
+				  if (etiquetaEclipse) etiquetaEclipse.style.visibility = "hidden"; 
+			   }
+			}
+			   
+			ocupado.style.visibility = "hidden";
+			document.getElementById("campoFecha").value = jupiter.obtenerFecha();
+		 }
+      </script>
+   </body>
+</html>
